@@ -56,6 +56,7 @@ describe("GET - /api/posts", () => {
                 expect(post).toHaveProperty('description', expect.any(String));
                 expect(post).toHaveProperty('created_at', expect.any(String));
                 expect(post).toHaveProperty('location', expect.any(String));
+                
             })
         })
     })
@@ -86,7 +87,7 @@ describe("GET - /api/posts", () => {
         })
         it("GET:400 - returns an error when sort_by is invalid", () => {
             return request(app)
-            .get("/api/posts?sort_by=invalid_column&longitude=-73.94581&latitude=40.807475")
+            .get("/api/posts?sort_by=invalid_column&longitude=-73.94581&latitude=40.807475") //.expect(400) .then(body)
             .expect(({ body }) => {
                 expect(body).toEqual({ msg: 'Invalid sort_by query'})
             })

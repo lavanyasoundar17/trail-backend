@@ -1,4 +1,4 @@
-onst format = require('pg-format');
+const format = require('pg-format');
 const db = require('../connection');
 const {
   convertTimestampToDate,
@@ -79,20 +79,17 @@ const seed = ({ usersData, postsData, favouritesData }) => {
         return db.query(insertUsersQueryStr);
       })
       .then(() => {
-        const formattedPostsData = postsData.map(convertTimestampToDate);
         const insertPostsQueryStr = format(
-          'INSERT INTO posts (username, post_img, description, created_at, location) VALUES %L RETURNING *;',
-          formattedPostsData.map(
-            ({
-              username,
-              post_img,
-              description,
-              created_at,
-              location
-            }) => [username, post_img, description, created_at, location]
-          )
-        );
-        return db.query(insertPostsQueryStr);
+                'INSERT INTO posts (username, post_img, description, created_at, location) VALUES %L;',
+                postsData.map(({ username, post_img, description, created_at, location }) => [
+                    username,
+                    post_img,
+                    description,
+                    created_at,
+                    `ST_GeomFromText('${location}', 4326)` // Properly format the POINT data
+                ])
+            );
+            return db.query(insertPostsQueryStr);
       })
       .then(() => {
         const insertFavouritesQueryStr = format(
