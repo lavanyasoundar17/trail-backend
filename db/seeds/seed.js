@@ -1,11 +1,10 @@
-const format = require('pg-format');
+onst format = require('pg-format');
 const db = require('../connection');
 const {
   convertTimestampToDate,
   createRef,
   formatPosts,
 } = require('./utils');
-
 const seed = ({ usersData, postsData, favouritesData }) => {
     return db
       .query(`DROP TABLE IF EXISTS favourites;`)
@@ -13,9 +12,18 @@ const seed = ({ usersData, postsData, favouritesData }) => {
         return db.query(`DROP TABLE IF EXISTS posts;`);
       })
       .then(() => {
+        return db.query(
+        `DROP EXTENSION IF EXISTS postgis;`
+        )
+      })
+      .then(() => {
         return db.query(`DROP TABLE IF EXISTS users;`);
       })
-      .then(() => {         
+      .then(() => {
+        return db.query(`
+          CREATE EXTENSION postgis;`)
+      })
+      .then(() => {
         return db.query(`
         CREATE TABLE users (
           username VARCHAR PRIMARY KEY,
@@ -24,28 +32,25 @@ const seed = ({ usersData, postsData, favouritesData }) => {
           points INT DEFAULT 0 NOT NULL
         );`)
       })
-      /////
       .then(() => {
-      return db.query(`
+        return db.query(`
         CREATE TABLE posts (
           post_id SERIAL PRIMARY KEY,
-          user_id VARCHAR(255) NOT NULL,
-          image_uri TEXT NOT NULL,
-          description TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          username VARCHAR NOT NULL REFERENCES users(username),
+          post_img VARCHAR,
+          description VARCHAR NOT NULL,
+          created_at TIMESTAMP DEFAULT NOW(),
           location GEOGRAPHY(Point, 4326) -- Using PostGIS Geography type to store the location
-        );
-      `);
-    })
-    .then(() => {
-      // Create a spatial index on the location column using GiST
-      return db.query(`
-        CREATE INDEX posts_geo_index
-        ON posts
-        USING GIST (location);
-      `);
-    })
-      ///////
+        );`);
+      })
+      .then(() => {
+        // Create a spatial index on the location column using GiST
+        return db.query(`
+          CREATE INDEX posts_geo_index
+          ON posts
+          USING GIST (location);
+        `);
+      })
       // .then(() => {
       //   return db.query(
       //     `CREATE INDEX posts_geo_index
@@ -87,7 +92,6 @@ const seed = ({ usersData, postsData, favouritesData }) => {
             }) => [username, post_img, description, created_at, location]
           )
         );
-  
         return db.query(insertPostsQueryStr);
       })
       .then(() => {
@@ -100,9 +104,5 @@ const seed = ({ usersData, postsData, favouritesData }) => {
         );
         return db.query(insertFavouritesQueryStr);
       })
-      
-};
-  
-  
+  };
   module.exports = seed;
-  
